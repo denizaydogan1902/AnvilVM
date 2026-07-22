@@ -47,7 +47,9 @@ class QemuRuntime @Inject constructor(
         ))
 
         // Virtio block device for better I/O
-        val driveArgs = "file=${config.diskImagePath},format=${config.diskFormat},if=virtio"
+        extraArgs.addAll(listOf(
+            "-drive", "file=${config.diskImagePath},format=${config.diskFormat},if=virtio"
+        ))
 
         return config.copy(
             qemuBinaryPath = binaryPath,

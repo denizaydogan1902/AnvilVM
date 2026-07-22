@@ -15,8 +15,6 @@ class CopyRectEncoding : RfbEncoding {
         val srcX = input.readUnsignedShort()
         val srcY = input.readUnsignedShort()
 
-        val fbHeight = framebuffer.size / fbWidth
-
         // Copy in correct order to handle overlapping regions
         if (srcY < y || (srcY == y && srcX < x)) {
             for (row in h - 1 downTo 0) {

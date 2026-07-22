@@ -7,17 +7,17 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class QemuEngine @Inject constructor() {
+class QemuEngine @Inject constructor(
+    private val avfDetector: AvfDetector,
+    private val kvmAccelerator: KvmAccelerator,
+    private val profiler: PerformanceProfiler
+) {
 
     companion object {
         init {
             System.loadLibrary("anvilvm-engine")
         }
     }
-
-    @Inject lateinit var avfDetector: AvfDetector
-    @Inject lateinit var kvmAccelerator: KvmAccelerator
-    @Inject lateinit var profiler: PerformanceProfiler
 
     external fun nativeStartVM(qemuBinaryPath: String, args: Array<String>): Int
     external fun nativeStopVM(): Boolean
