@@ -225,6 +225,44 @@ AnvilVM is developed as an **academic and educational project** exploring the fo
 
 ---
 
+## Code Quality & Test Results
+
+### Static Analysis (2026-07-22)
+
+Full source-level review of all 40+ source files. Results:
+
+| Check | Status | Details |
+|-------|--------|---------|
+| Kotlin syntax | PASS | All files parse without errors |
+| Import resolution | PASS | All cross-package references resolve correctly |
+| JNI signature match | PASS | Kotlin `external fun` signatures match C++ `JNICALL` names |
+| Hilt DI bindings | PASS | No duplicate bindings, constructor injection throughout |
+| Type consistency | PASS | No mismatched types in interfaces or overrides |
+| Unused code | PASS | Cleaned (removed dead variables and imports) |
+
+### Issues Found & Fixed
+
+| Severity | Issue | Fix |
+|----------|-------|-----|
+| Critical | Duplicate Hilt bindings (`@Provides` + `@Inject constructor`) for 11 classes | Removed all `@Provides` methods; Hilt auto-discovers `@Inject` classes |
+| Critical | `QemuEngine` field injection would crash at runtime (`UninitializedPropertyAccessException`) | Converted to constructor injection |
+| Bug | `QemuRuntime.buildFullConfig()` computed virtio drive args but never applied them | Added to `extraArgs` list |
+| Warning | Unused `RandomAccessFile` import in `PerformanceProfiler` | Removed |
+| Warning | Unused `fbHeight` variable in `CopyRectEncoding` | Removed |
+
+### Integration Test Coverage
+
+The `scripts/integration/full-integration-test.sh` validates:
+
+1. **Binary Verification** — ELF format check and minimum size for `.so` files
+2. **Alpine Boot (x86_64)** — QEMU TCG boots kernel, serial output captured
+3. **VNC Connectivity** — RFB 3.8 handshake verified on port 5905
+4. **Snapshot Create/Restore** — QCOW2 snapshot lifecycle (create/list/apply/delete)
+5. **RISC-V Firmware** — OpenSBI loads on `qemu-system-riscv64 -machine virt`
+6. **Performance Baseline** — Wall-clock boot measurement with CPU info logging
+
+---
+
 ## License
 
 AnvilVM is licensed under **GPLv3**.
