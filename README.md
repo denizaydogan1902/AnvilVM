@@ -209,14 +209,19 @@ AnvilVM is developed as an **academic and educational project** exploring the fo
 - [x] QEMU NDK cross-compilation pipeline
 - [x] VT100/ANSI terminal parser (256-color, 24-bit RGB)
 - [x] RFB 3.8 VNC client (Raw, CopyRect encoding)
-- [ ] Full QEMU .so build and integration test
-- [ ] ZRLE and Hextile VNC encoding support
-- [ ] Touch keyboard for terminal input
-- [ ] VM snapshot/restore (savevm/loadvm)
-- [ ] OS image download manager with progress
-- [ ] Performance profiling and TCG optimization
-- [ ] AVF/KVM acceleration (Android 13+ devices with kernel support)
-- [ ] RISC-V guest support
+- [x] Full QEMU .so build and integration test (Docker-based, with Alpine E2E)
+- [x] ZRLE and Hextile VNC encoding support
+- [x] Touch keyboard for terminal input (full QWERTY + modifiers + arrows)
+- [x] VM snapshot/restore (savevm/loadvm via QMP and qemu-img)
+- [x] OS image download manager with progress (resume, SHA256 verify)
+- [x] Performance profiling and TCG optimization (MIPS estimation, cache tuning)
+- [x] AVF/KVM acceleration (Android 13+ devices with /dev/kvm and pKVM detection)
+- [x] RISC-V guest support (rv64, OpenSBI firmware, virtio devices)
+- [ ] Multi-display support (multiple VMs side by side)
+- [ ] Audio passthrough (virtio-sound)
+- [ ] USB device forwarding from host
+- [ ] Cloud image auto-provisioning (cloud-init)
+- [ ] Custom kernel boot (bzImage / Image direct load)
 
 ---
 

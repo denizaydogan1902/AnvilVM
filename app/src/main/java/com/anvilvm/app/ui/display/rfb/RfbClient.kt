@@ -1,6 +1,7 @@
 package com.anvilvm.app.ui.display.rfb
 
 import android.graphics.Bitmap
+import com.anvilvm.app.ui.display.rfb.encoding.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,6 +16,11 @@ class RfbClient {
     private var input: DataInputStream? = null
     private var output: DataOutputStream? = null
     private var job: Job? = null
+
+    private val rawEncoding = RawEncoding()
+    private val copyRectEncoding = CopyRectEncoding()
+    private val hextileEncoding = HextileEncoding()
+    private val zrleEncoding = ZrleEncoding()
 
     var width = 0
         private set
@@ -230,55 +236,27 @@ class RfbClient {
             val encoding = input!!.readInt()
 
             when (encoding) {
-                RfbConstants.ENCODING_RAW -> decodeRawRect(x, y, w, h)
-                RfbConstants.ENCODING_COPYRECT -> decodeCopyRect(x, y, w, h)
+                RfbConstants.ENCODING_RAW ->
+                    rawEncoding.decode(input!!, framebuffer, width, x, y, w, h, pixelFormat)
+                RfbConstants.ENCODING_COPYRECT ->
+                    copyRectEncoding.decode(input!!, framebuffer, width, x, y, w, h, pixelFormat)
+                RfbConstants.ENCODING_HEXTILE ->
+                    hextileEncoding.decode(input!!, framebuffer, width, x, y, w, h, pixelFormat)
+                RfbConstants.ENCODING_ZRLE ->
+                    zrleEncoding.decode(input!!, framebuffer, width, x, y, w, h, pixelFormat)
                 RfbConstants.ENCODING_DESKTOP_SIZE -> {
                     width = w
                     height = h
                     framebuffer = IntArray(width * height)
                 }
-                else -> decodeRawRect(x, y, w, h) // fallback
+                else ->
+                    rawEncoding.decode(input!!, framebuffer, width, x, y, w, h, pixelFormat)
             }
         }
 
         // Update bitmap
         updateBitmap()
         requestIncrementalUpdate()
-    }
-
-    private fun decodeRawRect(x: Int, y: Int, w: Int, h: Int) {
-        val bytesPerPixel = pixelFormat.bitsPerPixel / 8
-        val rowBytes = w * bytesPerPixel
-        val rowBuffer = ByteArray(rowBytes)
-
-        for (row in 0 until h) {
-            input!!.readFully(rowBuffer)
-            val destY = y + row
-            if (destY >= height) continue
-
-            for (col in 0 until w) {
-                val destX = x + col
-                if (destX >= width) continue
-
-                val pixel = pixelFormat.decodePixel(rowBuffer, col * bytesPerPixel)
-                framebuffer[destY * width + destX] = pixel
-            }
-        }
-    }
-
-    private fun decodeCopyRect(x: Int, y: Int, w: Int, h: Int) {
-        val srcX = input!!.readUnsignedShort()
-        val srcY = input!!.readUnsignedShort()
-
-        for (row in 0 until h) {
-            for (col in 0 until w) {
-                val srcIdx = (srcY + row) * width + (srcX + col)
-                val dstIdx = (y + row) * width + (x + col)
-                if (srcIdx < framebuffer.size && dstIdx < framebuffer.size) {
-                    framebuffer[dstIdx] = framebuffer[srcIdx]
-                }
-            }
-        }
     }
 
     private fun updateBitmap() {

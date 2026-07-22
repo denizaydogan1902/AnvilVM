@@ -180,7 +180,7 @@ mkdir -p build-android && cd build-android
     --host-cc=gcc \
     --ar="${TOOLCHAIN}/bin/llvm-ar" \
     --strip="${TOOLCHAIN}/bin/llvm-strip" \
-    --target-list="x86_64-softmmu,aarch64-softmmu" \
+    --target-list="x86_64-softmmu,aarch64-softmmu,riscv64-softmmu" \
     --prefix="${BUILD_DIR}/install" \
     --extra-cflags="-I${SYSROOT}/include -fPIC" \
     --extra-ldflags="-L${SYSROOT}/lib -fPIC -shared" \
@@ -211,6 +211,7 @@ mkdir -p build-android && cd build-android
     --enable-vnc \
     --enable-slirp \
     --enable-tcg \
+    --enable-qmp \
     --static
 
 echo "Building QEMU (this may take 15-30 minutes)..."
@@ -225,13 +226,21 @@ mkdir -p "${OUTPUT_DIR}/arm64-v8a"
 # Copy and rename as .so (Android extracts .so from APK lib/ directory)
 cp qemu-system-x86_64 "${OUTPUT_DIR}/arm64-v8a/libqemu-system-x86_64.so"
 cp qemu-system-aarch64 "${OUTPUT_DIR}/arm64-v8a/libqemu-system-aarch64.so"
+cp qemu-system-riscv64 "${OUTPUT_DIR}/arm64-v8a/libqemu-system-riscv64.so"
+
+# Also package qemu-img for snapshot support
+cp qemu-img "${OUTPUT_DIR}/arm64-v8a/libqemu-img.so" 2>/dev/null || true
 
 # Strip debug symbols to reduce size
 "${TOOLCHAIN}/bin/llvm-strip" "${OUTPUT_DIR}/arm64-v8a/libqemu-system-x86_64.so"
 "${TOOLCHAIN}/bin/llvm-strip" "${OUTPUT_DIR}/arm64-v8a/libqemu-system-aarch64.so"
+"${TOOLCHAIN}/bin/llvm-strip" "${OUTPUT_DIR}/arm64-v8a/libqemu-system-riscv64.so"
+"${TOOLCHAIN}/bin/llvm-strip" "${OUTPUT_DIR}/arm64-v8a/libqemu-img.so" 2>/dev/null || true
 
 echo ""
 echo "=== Build Complete ==="
-echo "  x86_64 emulator: ${OUTPUT_DIR}/arm64-v8a/libqemu-system-x86_64.so"
+echo "  x86_64 emulator:  ${OUTPUT_DIR}/arm64-v8a/libqemu-system-x86_64.so"
 echo "  aarch64 emulator: ${OUTPUT_DIR}/arm64-v8a/libqemu-system-aarch64.so"
+echo "  riscv64 emulator: ${OUTPUT_DIR}/arm64-v8a/libqemu-system-riscv64.so"
+echo "  qemu-img tool:    ${OUTPUT_DIR}/arm64-v8a/libqemu-img.so"
 ls -lh "${OUTPUT_DIR}/arm64-v8a/"*.so
