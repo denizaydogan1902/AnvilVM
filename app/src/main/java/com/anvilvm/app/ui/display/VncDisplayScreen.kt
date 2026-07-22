@@ -1,6 +1,6 @@
 package com.anvilvm.app.ui.display
 
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -9,7 +9,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 
@@ -18,6 +22,8 @@ fun VncDisplayScreen(
     viewModel: VncDisplayViewModel = hiltViewModel()
 ) {
     val connectionState by viewModel.connectionState.collectAsState()
+    val bitmap by viewModel.framebuffer.collectAsState()
+    var canvasSize by remember { mutableStateOf(IntSize.Zero) }
 
     Box(
         modifier = Modifier
@@ -40,18 +46,31 @@ fun VncDisplayScreen(
                 )
             }
             VncConnectionState.CONNECTED -> {
-                Canvas(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pointerInput(Unit) {
-                            detectTapGestures { offset ->
-                                viewModel.onTap(offset.x, offset.y)
+                val currentBitmap = bitmap
+                if (currentBitmap != null) {
+                    Image(
+                        bitmap = currentBitmap.asImageBitmap(),
+                        contentDescription = "VM Display",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .onSizeChanged { canvasSize = it }
+                            .pointerInput(Unit) {
+                                detectTapGestures { offset ->
+                                    viewModel.onTap(
+                                        offset.x, offset.y,
+                                        canvasSize.width.toFloat(),
+                                        canvasSize.height.toFloat()
+                                    )
+                                }
                             }
-                        }
-                ) {
-                    // Framebuffer rendering will be implemented here
-                    // For now, draw a placeholder
-                    drawRect(Color(0xFF1A1B1D))
+                    )
+                } else {
+                    Text(
+                        text = "Waiting for framebuffer...",
+                        color = Color(0xFF555555),
+                        modifier = Modifier.align(Alignment.Center)
+                    )
                 }
             }
         }
