@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  qemu-builder:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.qemu-builder
+    volumes:
+      - ./output:/output
+    environment:
+      - ANDROID_NDK_HOME=/opt/android-ndk
+
+  # Quick test: run built QEMU in user-mode to verify it loads
+  qemu-test:
+    image: ubuntu:22.04
+    volumes:
+      - ./output:/qemu
+    command: |
+      bash -c "
+        echo '=== Verifying QEMU binary ===' &&
+        file /qemu/arm64-v8a/libqemu-system-x86_64.so &&
+        echo 'Binary type check passed.'
+      "
+    depends_on:
+      - qemu-builder

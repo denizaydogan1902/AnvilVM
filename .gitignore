@@ -13,3 +13,10 @@ local.properties
 *.apk
 *.aab
 *.hprof
+
+# QEMU build artifacts
+/build-qemu
+/docker/output
+/test-images
+/app/src/main/jniLibs/arm64-v8a/libqemu-*.so
+/app/src/main/jniLibs/x86_64/libqemu-*.so

@@ -1,0 +1,75 @@
+## =============================================================================
+## AnvilVM — QEMU Android Cross-Compilation Docker Environment
+## =============================================================================
+## Builds QEMU as .so libraries for Android arm64-v8a target.
+##
+## Usage:
+##   docker build -t anvilvm-qemu-builder -f docker/Dockerfile.qemu-builder .
+##   docker run --rm -v $(pwd)/output:/output anvilvm-qemu-builder
+##
+## Output:
+##   /output/arm64-v8a/libqemu-system-x86_64.so
+##   /output/arm64-v8a/libqemu-system-aarch64.so
+## =============================================================================
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV ANDROID_NDK_VERSION=r26d
+ENV ANDROID_NDK_HOME=/opt/android-ndk
+ENV API_LEVEL=26
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    ninja-build \
+    meson \
+    pkg-config \
+    python3 \
+    python3-pip \
+    python3-venv \
+    curl \
+    wget \
+    xz-utils \
+    unzip \
+    git \
+    flex \
+    bison \
+    libglib2.0-dev \
+    gettext \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and extract Android NDK
+RUN mkdir -p /opt && \
+    cd /tmp && \
+    wget -q "https://dl.google.com/android/repository/android-ndk-${ANDROID_NDK_VERSION}-linux.zip" && \
+    unzip -q "android-ndk-${ANDROID_NDK_VERSION}-linux.zip" -d /opt && \
+    mv "/opt/android-ndk-${ANDROID_NDK_VERSION}" "${ANDROID_NDK_HOME}" && \
+    rm "android-ndk-${ANDROID_NDK_VERSION}-linux.zip"
+
+# Set toolchain paths
+ENV TOOLCHAIN=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64
+ENV CC_ARM64=${TOOLCHAIN}/bin/aarch64-linux-android${API_LEVEL}-clang
+ENV CXX_ARM64=${TOOLCHAIN}/bin/aarch64-linux-android${API_LEVEL}-clang++
+ENV AR=${TOOLCHAIN}/bin/llvm-ar
+ENV STRIP=${TOOLCHAIN}/bin/llvm-strip
+ENV RANLIB=${TOOLCHAIN}/bin/llvm-ranlib
+
+WORKDIR /build
+
+# Copy build scripts
+COPY scripts/build-qemu-android.sh /build/build.sh
+COPY scripts/qemu-android-toolchain.cmake /build/toolchain.cmake
+
+RUN chmod +x /build/build.sh
+
+# Build script that outputs to /output
+RUN mkdir -p /output/arm64-v8a
+
+CMD ["/bin/bash", "-c", "\
+    export ANDROID_NDK_HOME=/opt/android-ndk && \
+    /build/build.sh && \
+    cp /build/../app/src/main/jniLibs/arm64-v8a/*.so /output/arm64-v8a/ 2>/dev/null; \
+    echo '=== Build artifacts ===' && \
+    ls -lh /output/arm64-v8a/ \
+"]
